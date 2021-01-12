@@ -1229,7 +1229,7 @@ stonith_device_remove(const char *id, gboolean from_cib)
         device->api_registered = FALSE;
     }
 
-    if (!device->cib_registered && !device->api_registered) {
+    if ((!device->cib_registered && !device->api_registered) || !device->api_registered) {
         g_hash_table_remove(device_list, id);
         ndevices = g_hash_table_size(device_list);
         crm_info("Removed '%s' from device list (%d active device%s)",
