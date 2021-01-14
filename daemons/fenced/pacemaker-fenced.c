@@ -713,6 +713,26 @@ cib_devices_update(void)
 }
 
 static void
+debug_print_device(gpointer key, gpointer value, gpointer user_data)
+{
+    stonith_device_t *dev = value;
+    crm_debug("device_list: id[%s] api_registered[%s]", dev->id, dev->api_registered?"TRUE":"FALSE");
+}
+
+static gboolean
+is_api_unregistered(gpointer key, gpointer value, gpointer user_data)
+{
+    stonith_device_t *dev = value;
+
+    if (!dev->api_registered) {
+        crm_debug("removing[%s]", dev->id);
+        return TRUE;
+    }
+    crm_debug("not removing[%s] because api_registered is TRUE", dev->id);
+    return FALSE;
+}
+
+static void
 update_cib_stonith_devices_v2(const char *event, xmlNode * msg)
 {
     xmlNode *change = NULL;
@@ -765,7 +785,14 @@ update_cib_stonith_devices_v2(const char *event, xmlNode * msg)
         }
     }
 
+    //DEBUG
+    if (g_hash_table_size(device_list)) {
+        crm_debug("needs_update[%s]", needs_update?"TRUE":"FALSE");
+        g_hash_table_foreach(device_list, debug_print_device, NULL);
+    }
+
     if(needs_update) {
+        g_hash_table_foreach_remove(device_list, is_api_unregistered, NULL);
         crm_info("Updating device list from CIB: %s", reason);
         cib_devices_update();
     } else {
